@@ -15,7 +15,17 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        for key in ("request_id", "path", "method", "status_code", "duration_ms"):
+        for key in (
+            "request_id",
+            "path",
+            "method",
+            "status_code",
+            "duration_ms",
+            "document_id",
+            "stage",
+            "chunk_count",
+            "page_count",
+        ):
             value = getattr(record, key, None)
             if value is not None:
                 payload[key] = value
@@ -63,4 +73,3 @@ def add_request_logging_middleware(app: FastAPI) -> None:
         )
         response.headers["X-Request-ID"] = request_id
         return response
-

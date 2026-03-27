@@ -25,3 +25,18 @@ class FileStorageError(AppError):
 class InvalidUploadError(AppError):
     status_code = HTTPStatus.BAD_REQUEST
     code = "invalid_upload"
+
+
+class IngestionError(AppError):
+    status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = "ingestion_error"
+
+
+class EmbeddingError(AppError):
+    status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = "embedding_error"
+
+
+class VectorStoreError(AppError):
+    status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    code = "vector_store_error"

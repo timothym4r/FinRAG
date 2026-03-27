@@ -1,89 +1,52 @@
-import { BarChart3, FileSearch, Quote } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
+import { AskForm } from "@/components/ask-form";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { PageShell } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { retrievalSources } from "@/lib/demo-data";
+import { ApiDocument, ApiRequestError, getDocuments } from "@/lib/api";
 
-export default function AskPage() {
+export default async function AskPage() {
+  let documents: ApiDocument[] = [];
+  let errorMessage: string | null = null;
+
+  try {
+    documents = await getDocuments();
+  } catch (error) {
+    errorMessage =
+      error instanceof ApiRequestError
+        ? error.message
+        : "Unable to load indexed documents from the backend.";
+  }
+
   return (
     <DashboardShell pathname="/ask">
       <PageShell className="space-y-6">
-        <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-          <Card className="bg-white/90">
-            <CardHeader>
-              <Badge className="w-fit">Ask the company corpus</Badge>
-              <CardTitle className="pt-4 font-serif text-3xl">
-                Why does recent NVIDIA guidance emphasize concentration risk?
-              </CardTitle>
-              <CardDescription>
-                Answer generation is backend-controlled in later phases. For now, this screen establishes the final product interaction pattern.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-[24px] border border-emerald-500/20 bg-emerald-500/5 p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-semibold text-slate-900">Concise answer</div>
-                  <Badge variant="success">Evidence-backed</Badge>
+        <Card className="bg-white/90">
+          <CardHeader>
+            <Badge className="w-fit">Grounded retrieval QA</Badge>
+            <CardTitle className="pt-4 font-serif text-3xl">
+              Ask the indexed financial corpus
+            </CardTitle>
+            <CardDescription>
+              Query embeddings retrieve candidate chunks from Qdrant, results are reranked, and the answer is composed only from retrieved evidence.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {errorMessage ? (
+              <div className="mb-6 flex items-start gap-3 rounded-[24px] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">
+                <AlertCircle className="mt-0.5 h-4 w-4" />
+                <div>
+                  <div className="font-semibold">Backend unavailable</div>
+                  <div className="mt-1">{errorMessage}</div>
                 </div>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
-                  The company appears to be broadening concentration risk disclosure because a larger share of growth depends on a small number of hyperscale and channel partners, and management is also linking demand assumptions to export controls and deployment timing
-                  <span className="text-emerald-700"> [1]</span>
-                  <span className="text-emerald-700"> [2]</span>
-                  <span className="text-emerald-700"> [3]</span>.
-                </p>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                {[
-                  { label: "Retriever mode", value: "Dense first", icon: FileSearch },
-                  { label: "Rerank", value: "Enabled", icon: BarChart3 },
-                  { label: "Confidence", value: "0.87", icon: Quote }
-                ].map((item) => (
-                  <div key={item.label} className="rounded-[24px] border border-slate-200/80 p-4">
-                    <item.icon className="h-4 w-4 text-emerald-700" />
-                    <div className="mt-4 text-xs uppercase tracking-[0.18em] text-slate-400">
-                      {item.label}
-                    </div>
-                    <div className="mt-2 text-lg font-semibold text-slate-900">{item.value}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3">
-                <Button>Expanded answer</Button>
-                <Button variant="outline">Ask this document</Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Source chunks</CardTitle>
-              <CardDescription>Inline citations map to chunk IDs and source previews.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {retrievalSources.map((source, index) => (
-                <div key={source.chunkId} className="rounded-[24px] border border-slate-200/80 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">
-                        [{index + 1}] {source.title}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {source.company} · {source.filingType} · {source.filingDate} · page {source.page}
-                      </div>
-                    </div>
-                    <Badge variant="secondary">{source.chunkId}</Badge>
-                  </div>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">{source.excerpt}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
+            ) : null}
+            <AskForm documents={documents.filter((document) => document.status === "indexed")} />
+          </CardContent>
+        </Card>
       </PageShell>
     </DashboardShell>
   );
 }
-

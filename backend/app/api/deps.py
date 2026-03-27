@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.core.config import Settings, get_settings
 from app.services.documents import DocumentService
+from app.services.qa import RetrievalQAService
 from app.services.storage import LocalFileStorage, StorageService
 
 
@@ -25,7 +26,15 @@ def get_storage_service(
 
 
 def get_document_service(
+    settings: Annotated[Settings, Depends(get_settings)],
     db: Annotated[Session, Depends(get_db)],
     storage: Annotated[StorageService, Depends(get_storage_service)],
 ) -> DocumentService:
-    return DocumentService(db=db, storage=storage)
+    return DocumentService(db=db, storage=storage, settings=settings)
+
+
+def get_retrieval_qa_service(
+    settings: Annotated[Settings, Depends(get_settings)],
+    db: Annotated[Session, Depends(get_db)],
+) -> RetrievalQAService:
+    return RetrievalQAService(db=db, settings=settings)

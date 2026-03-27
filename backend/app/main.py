@@ -10,7 +10,7 @@ from starlette import status
 
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
-from app.core.database import init_db
+from app.core.database import SessionLocal, init_db
 from app.core.errors import AppError
 from app.core.logging import add_request_logging_middleware, configure_logging, get_logger
 from app.schemas.error import ErrorResponse
@@ -20,10 +20,15 @@ from app.schemas.error import ErrorResponse
 async def lifespan(app: FastAPI):
     settings = app.state.settings
     settings.resolved_upload_dir.mkdir(parents=True, exist_ok=True)
+    settings.resolved_qdrant_local_path.mkdir(parents=True, exist_ok=True)
     if settings.database_url.startswith("sqlite:///"):
         database_path = Path(settings.database_url.replace("sqlite:///", "", 1))
         database_path.parent.mkdir(parents=True, exist_ok=True)
     init_db(getattr(app.state, "db_engine", None))
+    get_logger("finrag.startup").info(
+        "application_started",
+        extra={"stage": "startup"},
+    )
     yield
 
 
@@ -38,6 +43,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     )
     app.state.settings = app_settings
     app.state.db_engine = None
+    app.state.session_factory = SessionLocal
     app.dependency_overrides[get_settings] = lambda: app_settings
 
     app.add_middleware(
@@ -50,14 +56,28 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     add_request_logging_middleware(app)
 
     @app.exception_handler(AppError)
-    async def handle_app_error(_: Request, exc: AppError) -> JSONResponse:
+    async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
+        get_logger("finrag.errors").warning(
+            "application_error",
+            extra={
+                "request_id": getattr(request.state, "request_id", None),
+                "stage": "app_error",
+            },
+        )
         return JSONResponse(
             status_code=exc.status_code,
             content=ErrorResponse(error=exc.code, message=exc.message, details=exc.details).model_dump(),
         )
 
     @app.exception_handler(RequestValidationError)
-    async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
+    async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+        get_logger("finrag.errors").warning(
+            "validation_error",
+            extra={
+                "request_id": getattr(request.state, "request_id", None),
+                "stage": "validation_error",
+            },
+        )
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content=ErrorResponse(

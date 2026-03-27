@@ -19,6 +19,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expi
 
 
 def init_db(db_engine: Optional[Engine] = None) -> None:
+    from app.models.chunk import DocumentChunk  # noqa: F401
     from app.models.document import Document  # noqa: F401
 
     Base.metadata.create_all(bind=db_engine or engine)

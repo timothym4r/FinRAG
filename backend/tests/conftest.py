@@ -10,6 +10,7 @@ from app.api.deps import get_db, get_storage_service
 from app.core.config import Settings, get_settings
 from app.core.database import Base
 from app.main import create_app
+from app.models.chunk import DocumentChunk  # noqa: F401
 from app.models.document import Document  # noqa: F401
 from app.services.storage import LocalFileStorage
 
@@ -22,6 +23,7 @@ def test_settings(tmp_path: Path) -> Settings:
         env="test",
         database_url=f"sqlite:///{data_dir / 'test.db'}",
         upload_dir=str(data_dir / "uploads"),
+        qdrant_local_path=str(data_dir / "qdrant"),
         cors_origins="http://localhost:3000",
     )
 
@@ -37,6 +39,7 @@ def client(test_settings: Settings) -> Generator[TestClient, None, None]:
 
     app = create_app(test_settings)
     app.state.db_engine = engine
+    app.state.session_factory = TestingSessionLocal
 
     def override_settings() -> Settings:
         return test_settings

@@ -90,8 +90,8 @@ export default async function DocumentsPage() {
                     <div className="mt-1 font-semibold capitalize text-slate-900">{doc.status}</div>
                   </div>
                   <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Document ID</div>
-                    <div className="mt-1 font-semibold text-slate-900">{doc.id.slice(0, 8)}</div>
+                    <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Chunks</div>
+                    <div className="mt-1 font-semibold text-slate-900">{doc.chunk_count}</div>
                   </div>
                   <div>
                     <div className="text-xs uppercase tracking-[0.18em] text-slate-400">Created</div>
